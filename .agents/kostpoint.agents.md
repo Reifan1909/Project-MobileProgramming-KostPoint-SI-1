@@ -1,75 +1,65 @@
-# Kost Point Mobile
+# Kost Point Mobile - AI Agent Instructions
 
-Dokumen ini merupakan panduan utama dan acuan aturan tunggal (*Single Source of Truth*) untuk seluruh proses perencanaan, perancangan antarmuka, dan penulisan kode dalam pengembangan aplikasi mobile Flutter **"Kost Point"**.
+Dokumen ini merupakan panduan utama dan acuan aturan tunggal (*Single Source of Truth*) untuk seluruh proses pengembangan aplikasi mobile Flutter **"Kost Point"**.
 
 ---
 
 ## 1. Project Context
 
 - **Nama Aplikasi**: Kost Point Mobile
-  - *Deskripsi*: Aplikasi Pencarian Kos Fleksibel Berbasis Kalkulasi Jarak Otomatis ke Lokasi Tujuan (Kampus, Sekolah, Kantor) dan Ketersediaan Kamar Real-Time.
+  - *Deskripsi*: Aplikasi Pencarian Kos Fleksibel Berbasis Peta Dinamis, Kalkulasi Jarak Otomatis, dan Ketersediaan Kamar Real-Time.
 - **Framework & State Management**: Flutter (Dart) dengan State Management `provider`.
 - **Target Platform**: Android (Material Design 3).
-- **Segmentasi Pengguna**:
-  1. **Penyewa (Mahasiswa, Pelajar, Karyawan / Pekerja Kantor)**:
-     - Mencari dan memfilter kos berdasarkan titik tujuan (kampus, sekolah, maupun area kantor), harga, fasilitas, dan tipe (putra/putri/campur).
-     - Mengecek estimasi jarak otomatis dan estimasi waktu tempuh (berkendara motor & jalan kaki) ke lokasi tujuan.
-     - Melihat rating serta ulasan kos.
-     - Menghubungi langsung pemilik kos melalui tombol intent WhatsApp otomatis dengan template pesan yang telah disiapkan.
-  2. **Pemilik Kos**:
-     - Mengelola inventaris ketersediaan kamar (sisa kamar vs total kamar) secara real-time.
-     - Memasang iklan fasilitas kos lengkap dan foto properti.
-     - Mengaktifkan status Pro / Premium untuk memprioritaskan penampilan kos di halaman katalog.
+- **Segmentasi Pengguna & Akses**:
+  1. **Guest (Tanpa Login)**:
+     - Bisa membuka aplikasi dan langsung mencari kos.
+     - Bisa menentukan Titik Tujuan (Kampus/Sekolah/Kantor) secara bebas dengan memilih titik (*pin point*) di Google Maps.
+     - Bisa melihat daftar kos, detail fasilitas, melihat jarak, dan estimasi waktu tempuh.
+  2. **Penyewa (Wajib Login)**:
+     - Memiliki semua akses *Guest*.
+     - Ditambah fitur interaktif: Memberikan rating, menulis ulasan, dan menghubungi pemilik via WhatsApp. Jika *Guest* menekan tombol ini, munculkan dialog "Silakan Login".
+  3. **Pemilik Kos (Wajib Login)**:
+     - Dashboard khusus untuk mengelola ketersediaan kamar (sisa vs total kamar).
+     - Memasang iklan kos, mengunggah foto, dan **menentukan titik koordinat lokasi kos di peta (*map picker*)**.
+     - Manajemen status Pro/Premium.
 
 ---
 
 ## 2. Color Palette & UI Guidelines
 
-Penggunaan warna **wajib** mengikuti palet berikut secara konsisten. Dilarang menggunakan warna di luar palet resmi ini untuk elemen struktural utama aplikasi.
+Penggunaan warna **wajib** mengikuti palet berikut secara ketat.
 
 | Nama Variabel / Token | Kode Hex | Peruntukan & Kegunaan |
 | :--- | :--- | :--- |
-| `backgroundColor` | `#F5F8FA` | Latar belakang (*scaffold background*) modern dan bersih untuk halaman utama serta katalog. |
-| `surfaceBorderSoft` | `#E2E2EC` | Latar kartu sekunder, border/garis pemisah (*divider*), dan kontur input field lembut. |
-| `secondaryCardAccent` | `#C9CCB7` | Aksen netral elegan untuk tag fasilitas, chip status ketersediaan, atau elemen dekoratif sekunder. |
-| `primaryAccent` | `#7EAAEE` | Biru modern untuk tombol aksi utama (*ElevatedButton*), header/AppBar, tautan aktif, tab aktif, dan ikon navigasi terpilih. |
-| `textSecondaryMuted` | `#878788` | Abu-abu netral untuk teks jarak tempuh, alamat kos, keterangan waktu, dan placeholder. |
-| `textPrimary` | `#323335` | Teks utama yang tegas, tajam, dan mudah dibaca (nama kos, harga, judul halaman, dan heading). |
+| `backgroundColor` | `#F5F8FA` | Latar belakang utama aplikasi dan layar katalog. |
+| `surfaceBorderSoft` | `#E2E2EC` | Latar kartu sekunder, garis pemisah (*divider*), border lembut. |
+| `secondaryCardAccent` | `#C9CCB7` | Aksen netral elegan untuk tag fasilitas, chip status ketersediaan. |
+| `primaryAccent` | `#7EAAEE` | Biru modern untuk tombol utama, AppBar, dan pin maps aktif. |
+| `textSecondaryMuted` | `#878788` | Abu-abu netral untuk teks jarak tempuh, alamat, placeholder. |
+| `textPrimary` | `#323335` | Teks utama yang tegas (nama kos, harga, judul). |
 
 ### Aturan Desain Antarmuka:
-- **Material Design 3**: Aktifkan `useMaterial3: true` pada `ThemeData`.
+- **Material Design 3**: Aktifkan `useMaterial3: true`.
+- **Halaman Autentikasi**: Desain halaman login harus membedakan dengan jelas opsi "Masuk sebagai Penyewa" dan "Masuk sebagai Pemilik Kos" (misal dengan dua tab atau dua tombol besar).
 - **Standar Kartu Kos (`KosCard`)**:
-  - Wajib menampilkan foto sampul (*thumbnail image*) di bagian atas kartu dengan tinggi proporsional **140–160px**.
-  - Sudut kartu wajib melengkung lembut dengan `BorderRadius.circular(16)`.
-  - **Dilarang** menampilkan kartu kos yang hanya berisi teks tanpa gambar sampul.
-- **Hirarki Tipografi**:
-  - Gunakan font yang bersih dan terbaca (misal: Poppins atau Plus Jakarta Sans via `google_fonts`).
-  - **Bold / Semi-bold** untuk nama kos dan label harga sewa bulanan.
-  - **Regular / Medium** untuk keterangan jarak ke lokasi tujuan (kampus, sekolah, kantor), alamat, dan sisa kamar.
-- **Konsistensi Spacing**: Terapkan margin dan padding dengan kelipatan 4 atau 8 (8px, 12px, 16px, 24px) untuk menjaga ritme visual.
+  - Wajib ada foto sampul (tinggi 140–160px) dengan `BorderRadius.circular(16)`.
+  - Hirarki font (Poppins/Plus Jakarta Sans): **Bold** (Nama/Harga), **Regular** (Jarak/Fasilitas).
+- **Interaksi Maps**: Halaman pencarian dan penandaan lokasi harus menggunakan UI Peta interaktif (seperti `google_maps_flutter`).
 
 ---
 
 ## 3. Agent Rules & Standar Penulisan Kode
 
-Seluruh agen dan pengembang wajib mematuhi standar arsitektur dan penulisan kode berikut:
-
 ### A. Arsitektur Folder (Feature-First)
-Struktur di dalam `lib/` wajib dipisahkan secara modular:
 ```text
 lib/
-├── core/                  # Utilitas global, tema, dan helper
-│   ├── constants/         # app_colors.dart, app_sizes.dart, dummy_data.dart
-│   ├── theme/             # app_theme.dart (Material 3 Theme)
-│   └── utils/             # distance_calculator.dart, url_helper.dart
-├── shared/                # Komponen dan model yang dipakai lintas fitur
-│   ├── models/            # kos_model.dart, destination_model.dart (kampus, sekolah, kantor)
-│   └── widgets/           # kos_card.dart, custom_button.dart, pro_badge.dart
+├── core/                  # app_colors.dart, app_theme.dart, distance_calculator.dart, dummy_data.dart
+├── shared/                # kos_model.dart, user_model.dart, kos_card.dart, map_picker_dialog.dart
 ├── features/
-│   ├── auth/              # login, registrasi, pemilihan peran (role)
-│   ├── penyewa/           # katalog kos, filter lokasi tujuan (kampus/sekolah/kantor), detail kos, kalkulasi jarak
-│   └── pemilik/           # dashboard pemilik, edit ketersediaan kamar, manajemen Pro
-└── main.dart              # Inisialisasi awal, multi-provider setup, dan router
+│   ├── auth/              # login_screen.dart (pemilihan role), auth_provider.dart
+│   ├── penyewa/           # beranda_katalog.dart, map_search.dart, detail_kos.dart
+│   └── pemilik/           # dashboard_pemilik.dart, tambah_kos_screen.dart (dengan map picker)
+└── main.dart              # Setup provider, inisialisasi aplikasi (Route awal ke Beranda Guest)
 ```
 > **Aturan**: Dilarang menumpuk seluruh kode dalam satu file `main.dart`. `main.dart` hanya berisi konfigurasi bootstrap aplikasi. Modul penyewa dapat diimplementasikan di folder `features/penyewa/` (atau `features/mahasiswa/` jika mempertahankan konvensi nama awal).
 
