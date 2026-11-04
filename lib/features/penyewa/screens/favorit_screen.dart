@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/kos_card.dart';
 import '../providers/katalog_provider.dart';
+import 'detail_kos_screen.dart';
 
 /// Halaman Favorit (Menu Bar Tab Favorit).
 class FavoritScreen extends StatelessWidget {
@@ -37,6 +38,17 @@ class FavoritScreen extends StatelessWidget {
                   kos: kos,
                   targetLatitude: destination.latitude,
                   targetLongitude: destination.longitude,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailKosScreen(
+                          kos: kos,
+                          destination: destination,
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),

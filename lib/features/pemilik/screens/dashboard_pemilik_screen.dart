@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/models/kos_model.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../penyewa/providers/katalog_provider.dart';
+import 'tambah_kos_screen.dart';
 
 /// Dashboard Khusus Pemilik Kos (Section 1 & 3.A Panduan).
 /// Mengelola ketersediaan kamar secara real-time, melihat status Pro, dan menentukan titik koordinat peta.
@@ -51,15 +52,71 @@ class DashboardPemilikScreen extends StatelessWidget {
             onAddNew: () => _openAddKosModal(context),
           ),
           const SizedBox(height: 10),
-          ...managedKosList.map((kos) => _ManagedKosItemCard(kos: kos)),
+          if (managedKosList.isEmpty)
+            _EmptyManagedKosCard(onAddNew: () => _openAddKosModal(context))
+          else
+            ...managedKosList.map((kos) => _ManagedKosItemCard(kos: kos)),
         ],
       ),
     );
   }
 
   void _openAddKosModal(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Form Tambah Kos akan dibuka pada modul Pemilik.')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TambahKosScreen()),
+    );
+  }
+}
+
+class _EmptyManagedKosCard extends StatelessWidget {
+  final VoidCallback onAddNew;
+
+  const _EmptyManagedKosCard({required this.onAddNew});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceBorderSoft),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryAccent.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.apartment_rounded, size: 40, color: AppColors.primaryAccent),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Belum Ada Kos Terdaftar',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Daftarkan properti kos Anda sekarang untuk mulai menerima calon penyewa.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondaryMuted),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: onAddNew,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryAccent,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Daftarkan Kos Sekarang'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -231,6 +288,7 @@ class _ManagedKosItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final katalog = context.read<KatalogProvider>();
+    final auth = context.read<AuthProvider>();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -249,12 +307,12 @@ class _ManagedKosItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   kos.imageUrl,
-                  width: 60,
-                  height: 60,
+                  width: 64,
+                  height: 64,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    width: 60,
-                    height: 60,
+                    width: 64,
+                    height: 64,
                     color: AppColors.surfaceBorderSoft,
                     child: const Icon(Icons.apartment_rounded, color: AppColors.textSecondaryMuted),
                   ),
@@ -265,24 +323,49 @@ class _ManagedKosItemCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      kos.name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        if (kos.isPremium) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryAccent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'PRO',
+                              style: TextStyle(color: AppColors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            kos.name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${kos.district} • ${kos.formattedPrice}',
+                      '${kos.type} • ${kos.district}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Peta: ${kos.latitude.toStringAsFixed(4)}, ${kos.longitude.toStringAsFixed(4)}',
-                      style: const TextStyle(fontSize: 10, fontFamily: 'monospace', color: AppColors.primaryAccent),
+                      kos.formattedPrice,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryAccent),
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 20),
+                tooltip: 'Hapus Kos',
+                onPressed: () => _confirmDeleteKos(context, kos, katalog, auth),
               ),
             ],
           ),
@@ -327,6 +410,34 @@ class _ManagedKosItemCard extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteKos(BuildContext context, KosModel kos, KatalogProvider katalog, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Kos Ini?'),
+        content: Text('Apakah Anda yakin ingin menghapus "${kos.name}" dari sistem?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: AppColors.white),
+            onPressed: () {
+              Navigator.pop(ctx);
+              katalog.deleteKos(kos.id);
+              auth.removeManagedKos(kos.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Kos "${kos.name}" berhasil dihapus.')),
+              );
+            },
+            child: const Text('Hapus'),
           ),
         ],
       ),

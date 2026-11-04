@@ -94,6 +94,63 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Login Otomatis dengan Akun Google
+  Future<bool> loginWithGoogle({
+    required UserRole role,
+    String? email,
+    String? name,
+    String? avatarUrl,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    final isOwner = role == UserRole.pemilik;
+    final defaultEmail = isOwner ? 'syamsul.bahri@gmail.com' : 'reifan.mardatilla@gmail.com';
+    final defaultName = isOwner ? 'Haji Syamsul Bahri' : 'Reifan Mardatilla';
+    final defaultAvatar = isOwner
+        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80'
+        : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80';
+
+    if (isOwner) {
+      _currentUser = demoPemilik.copyWith(
+        email: email ?? defaultEmail,
+        name: name ?? defaultName,
+        avatarUrl: avatarUrl ?? defaultAvatar,
+      );
+    } else {
+      _currentUser = demoPenyewa.copyWith(
+        email: email ?? defaultEmail,
+        name: name ?? defaultName,
+        avatarUrl: avatarUrl ?? defaultAvatar,
+      );
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  /// Menambahkan ID kos yang baru didaftarkan ke akun pemilik aktif
+  void addManagedKos(String kosId) {
+    if (_currentUser != null) {
+      final updatedList = List<String>.from(_currentUser!.managedKosIds)..add(kosId);
+      _currentUser = _currentUser!.copyWith(managedKosIds: updatedList);
+      notifyListeners();
+    }
+  }
+
+  /// Menghapus ID kos dari daftar kelolaan pemilik
+  void removeManagedKos(String kosId) {
+    if (_currentUser != null) {
+      final updatedList = List<String>.from(_currentUser!.managedKosIds)..remove(kosId);
+      _currentUser = _currentUser!.copyWith(managedKosIds: updatedList);
+      notifyListeners();
+    }
+  }
+
   /// Logout kembali ke Mode Guest
   void logout() {
     _currentUser = null;

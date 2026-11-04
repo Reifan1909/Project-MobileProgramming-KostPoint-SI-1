@@ -85,6 +85,19 @@ class KatalogProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Menambahkan kos baru hasil pendaftaran pemilik
+  void addKos(KosModel kos) {
+    _kosList.insert(0, kos);
+    notifyListeners();
+  }
+
+  /// Menghapus kos dari sistem
+  void deleteKos(String kosId) {
+    _kosList.removeWhere((k) => k.id == kosId);
+    _bookmarkedKosIds.remove(kosId);
+    notifyListeners();
+  }
+
   /// Update ketersediaan kamar
   void updateRoomAvailability(String kosId, int remainingRooms) {
     final index = _kosList.indexWhere((k) => k.id == kosId);

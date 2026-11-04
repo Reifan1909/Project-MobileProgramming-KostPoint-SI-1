@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/dummy_data.dart';
@@ -6,10 +8,10 @@ import '../../../core/utils/distance_calculator.dart';
 import '../../../shared/models/kos_model.dart';
 import '../../../shared/widgets/map_picker_dialog.dart';
 import '../providers/katalog_provider.dart';
+import 'detail_kos_screen.dart';
 
 /// Halaman Pencarian Peta Eksplorasi (Menu Bar Tab Peta).
-/// Memungkinkan navigasi peta bebas, melihat sebaran kos di sekitar titik tujuan,
-/// dan memindahkan titik pusat pencarian ke mana saja di Indonesia.
+/// Menggunakan OpenStreetMap nyata untuk menampilkan sebaran lokasi kos di sekitar titik tujuan.
 class MapSearchScreen extends StatefulWidget {
   const MapSearchScreen({super.key});
 
@@ -18,13 +20,40 @@ class MapSearchScreen extends StatefulWidget {
 }
 
 class _MapSearchScreenState extends State<MapSearchScreen> {
+  late final MapController _mapController;
   KosModel? _selectedKos;
+  String? _lastDestinationId;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _checkDestinationUpdate(DestinationTarget destination) {
+    if (_lastDestinationId != destination.id) {
+      _lastDestinationId = destination.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _mapController.move(LatLng(destination.latitude, destination.longitude), 14.5);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<KatalogProvider>();
     final destination = provider.selectedDestination;
     final kosList = provider.sortedKosList;
+
+    _checkDestinationUpdate(destination);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -34,11 +63,15 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
       ),
       body: Stack(
         children: [
-          _InteractiveMapExplorer(
+          _OsmMapExplorer(
+            mapController: _mapController,
             destination: destination,
             kosList: kosList,
             selectedKos: _selectedKos,
-            onSelectKos: (kos) => setState(() => _selectedKos = kos),
+            onSelectKos: (kos) {
+              setState(() => _selectedKos = kos);
+              _mapController.move(LatLng(kos.latitude, kos.longitude), 15.5);
+            },
           ),
           Positioned(
             top: 14,
@@ -47,6 +80,14 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
             child: _LocationStatusCard(
               destination: destination,
               onTapChange: () => _openMapPicker(destination),
+            ),
+          ),
+          Positioned(
+            right: 14,
+            bottom: _selectedKos != null ? 140 : 24,
+            child: _MapFloatingControls(
+              mapController: _mapController,
+              destination: destination,
             ),
           ),
           if (_selectedKos != null)
@@ -124,7 +165,7 @@ class _LocationStatusCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface.withValues(alpha: 0.95),
+        color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.surfaceBorderSoft),
         boxShadow: [
@@ -137,7 +178,14 @@ class _LocationStatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.my_location_rounded, color: AppColors.primaryAccent, size: 20),
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: AppColors.primaryAccent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.near_me_rounded, color: AppColors.primaryAccent, size: 18),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -146,12 +194,12 @@ class _LocationStatusCard extends StatelessWidget {
               children: [
                 Text(
                   destination.name,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${destination.city} • Ketuk untuk pindah kota/GPS',
+                  '${destination.city} • Ketuk untuk pindah kota/lokasi',
                   style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -175,14 +223,16 @@ class _LocationStatusCard extends StatelessWidget {
   }
 }
 
-/// Kanvas Peta Interaktif dengan titik pusat dan sebaran penanda kos
-class _InteractiveMapExplorer extends StatelessWidget {
+/// Tampilan Peta Nyata OpenStreetMap dengan Sebaran Pin Kos
+class _OsmMapExplorer extends StatelessWidget {
+  final MapController mapController;
   final DestinationTarget destination;
   final List<KosModel> kosList;
   final KosModel? selectedKos;
   final ValueChanged<KosModel> onSelectKos;
 
-  const _InteractiveMapExplorer({
+  const _OsmMapExplorer({
+    required this.mapController,
     required this.destination,
     required this.kosList,
     required this.selectedKos,
@@ -191,70 +241,99 @@ class _InteractiveMapExplorer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: LatLng(destination.latitude, destination.longitude),
+        initialZoom: 14.5,
+        minZoom: 3.0,
+        maxZoom: 19.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all,
+        ),
+      ),
       children: [
-        Container(
-          color: const Color(0xFFE5ECF4),
-          child: CustomPaint(painter: _PetaBackgroundPainter()),
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          fallbackUrl: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.kostpoint',
         ),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryAccent,
-                  borderRadius: BorderRadius.circular(6),
+        MarkerLayer(
+          markers: [
+            // Penanda Titik Tujuan (Kampus/Kantor)
+            Marker(
+              point: LatLng(destination.latitude, destination.longitude),
+              width: 140,
+              height: 60,
+              alignment: Alignment.topCenter,
+              child: _DestinationMarker(name: destination.name),
+            ),
+            // Penanda Seluruh Kos Terdaftar
+            ...kosList.map((kos) {
+              final isSelected = selectedKos?.id == kos.id;
+              return Marker(
+                point: LatLng(kos.latitude, kos.longitude),
+                width: 120,
+                height: 52,
+                alignment: Alignment.topCenter,
+                child: GestureDetector(
+                  onTap: () => onSelectKos(kos),
+                  child: _KosMarkerPin(kos: kos, isSelected: isSelected),
                 ),
-                child: const Text(
-                  'Titik Tujuan',
-                  style: TextStyle(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                ),
-              ),
-              const Icon(Icons.stars_rounded, color: AppColors.primaryAccent, size: 38),
-            ],
-          ),
+              );
+            }),
+          ],
         ),
-        ..._buildKosMarkers(context),
       ],
     );
   }
+}
 
-  List<Widget> _buildKosMarkers(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final widgets = <Widget>[];
+class _DestinationMarker extends StatelessWidget {
+  final String name;
 
-    for (int i = 0; i < kosList.length && i < 6; i++) {
-      final kos = kosList[i];
-      final isSelected = selectedKos?.id == kos.id;
+  const _DestinationMarker({required this.name});
 
-      // Posisi offset terdistribusi di sekitar titik pusat
-      final radius = 90.0 + (i % 2) * 45.0;
-      final offsetX = size.width / 2 + radius * 1.3 * (i % 2 == 0 ? 1 : -1) * (i > 2 ? 0.8 : 0.5);
-      final offsetY = size.height / 2.3 + radius * (i % 3 == 0 ? 1 : -1) * 0.7;
-
-      widgets.add(
-        Positioned(
-          left: offsetX.clamp(20.0, size.width - 90.0),
-          top: offsetY.clamp(90.0, size.height - 240.0),
-          child: GestureDetector(
-            onTap: () => onSelectKos(kos),
-            child: _KosMapPin(kos: kos, isSelected: isSelected),
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.primaryAccent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            name.split(' ').take(3).join(' '),
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-      );
-    }
-    return widgets;
+        const Icon(Icons.stars_rounded, color: AppColors.primaryAccent, size: 28),
+      ],
+    );
   }
 }
 
-class _KosMapPin extends StatelessWidget {
+class _KosMarkerPin extends StatelessWidget {
   final KosModel kos;
   final bool isSelected;
 
-  const _KosMapPin({
+  const _KosMarkerPin({
     required this.kos,
     required this.isSelected,
   });
@@ -265,10 +344,10 @@ class _KosMapPin extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.textPrimary : AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: kos.isPremium ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
               width: kos.isPremium ? 2 : 1,
@@ -276,7 +355,8 @@ class _KosMapPin extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 6,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -284,26 +364,102 @@ class _KosMapPin extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (kos.isPremium) ...[
-                const Icon(Icons.verified_rounded, size: 12, color: AppColors.primaryAccent),
-                const SizedBox(width: 4),
+                const Icon(Icons.verified_rounded, size: 10, color: AppColors.primaryAccent),
+                const SizedBox(width: 3),
               ],
               Text(
                 kos.name.split(' ').take(2).join(' '),
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: isSelected ? AppColors.white : AppColors.textPrimary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
         Icon(
           Icons.location_on_rounded,
-          size: isSelected ? 34 : 28,
+          size: isSelected ? 30 : 24,
           color: kos.isPremium ? AppColors.primaryAccent : AppColors.textSecondaryMuted,
         ),
       ],
+    );
+  }
+}
+
+class _MapFloatingControls extends StatelessWidget {
+  final MapController mapController;
+  final DestinationTarget destination;
+
+  const _MapFloatingControls({
+    required this.mapController,
+    required this.destination,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _ControlCircleButton(
+          icon: Icons.add_rounded,
+          tooltip: 'Perbesar Peta',
+          onPressed: () {
+            final zoom = mapController.camera.zoom;
+            mapController.move(mapController.camera.center, zoom + 1);
+          },
+        ),
+        const SizedBox(height: 8),
+        _ControlCircleButton(
+          icon: Icons.remove_rounded,
+          tooltip: 'Perkecil Peta',
+          onPressed: () {
+            final zoom = mapController.camera.zoom;
+            mapController.move(mapController.camera.center, zoom - 1);
+          },
+        ),
+        const SizedBox(height: 8),
+        _ControlCircleButton(
+          icon: Icons.my_location_rounded,
+          tooltip: 'Kembali ke Titik Tujuan',
+          iconColor: AppColors.primaryAccent,
+          onPressed: () {
+            mapController.move(LatLng(destination.latitude, destination.longitude), 14.5);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ControlCircleButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color? iconColor;
+
+  const _ControlCircleButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.cardSurface,
+      elevation: 3,
+      shape: const CircleBorder(side: BorderSide(color: AppColors.surfaceBorderSoft)),
+      child: IconButton(
+        icon: Icon(icon, size: 20, color: iconColor ?? AppColors.textPrimary),
+        tooltip: tooltip,
+        onPressed: onPressed,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.zero,
+      ),
     );
   }
 }
@@ -331,23 +487,36 @@ class _KosMapPreviewCard extends StatelessWidget {
     final distText = DistanceCalculator.formatDistance(distKm);
     final travel = DistanceCalculator.formatTravelEstimate(distKm);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorderSoft),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailKosScreen(
+              kos: kos,
+              destination: target,
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceBorderSoft),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
               kos.imageUrl,
@@ -402,32 +571,7 @@ class _KosMapPreviewCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
-
-class _PetaBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 7
-      ..style = PaintingStyle.stroke;
-
-    final secondaryPaint = Paint()
-      ..color = const Color(0xFFEFF3F8)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    for (double y = 60; y < size.height; y += 100) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), roadPaint);
-    }
-    for (double x = 50; x < size.width; x += 90) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), roadPaint);
-    }
-    canvas.drawLine(Offset(0, size.height * 0.2), Offset(size.width, size.height * 0.7), secondaryPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

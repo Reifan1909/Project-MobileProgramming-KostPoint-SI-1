@@ -87,6 +87,35 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pop(context);
   }
 
+  Future<void> _handleGoogleLogin() async {
+    final selected = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _GoogleAccountPickerSheet(role: _selectedRole),
+    );
+
+    if (selected != null && mounted) {
+      final auth = context.read<AuthProvider>();
+      await auth.loginWithGoogle(
+        role: _selectedRole,
+        email: selected['email'],
+        name: selected['name'],
+        avatarUrl: selected['avatar'],
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Masuk otomatis dengan akun Google: ${auth.currentUser?.name} berhasil!'),
+            backgroundColor: AppColors.primaryAccent,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,6 +147,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscurePassword: _obscurePassword,
                 onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                 onSubmit: _handleLogin,
+              ),
+              const SizedBox(height: 16),
+              const _OrDivider(),
+              const SizedBox(height: 16),
+              _GoogleSignInButton(
+                role: _selectedRole,
+                onPressed: _handleGoogleLogin,
               ),
               const SizedBox(height: 18),
               _DemoQuickLoginCard(
@@ -442,6 +478,337 @@ class _DemoQuickLoginCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Pembatas divider antara form email dan Google Sign-In
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(child: Divider(color: AppColors.surfaceBorderSoft, thickness: 1)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'ATAU MASUK DENGAN',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondaryMuted,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: AppColors.surfaceBorderSoft, thickness: 1)),
+      ],
+    );
+  }
+}
+
+/// Tombol Masuk Otomatis dengan Akun Google
+class _GoogleSignInButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final UserRole role;
+
+  const _GoogleSignInButton({
+    required this.onPressed,
+    required this.role,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final roleLabel = role == UserRole.pemilik ? 'Pemilik Kos' : 'Penyewa';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.surfaceBorderSoft, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CustomPaint(
+                  painter: _GoogleLogoPainter(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  'Masuk Otomatis dengan Akun Google ($roleLabel)',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Painter untuk logo Google 4-warna resmi (Merah, Kuning, Hijau, Biru)
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double w = size.width;
+    final double h = size.height;
+    final center = Offset(w / 2, h / 2);
+    final radius = w / 2;
+    final strokeWidth = w * 0.22;
+    final rect = Rect.fromCircle(center: center, radius: radius - strokeWidth / 2);
+
+    final paintRed = Paint()
+      ..color = const Color(0xFFEA4335)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    final paintYellow = Paint()
+      ..color = const Color(0xFFFBBC05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    final paintGreen = Paint()
+      ..color = const Color(0xFF34A853)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    final paintBlue = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    const pi = 3.1415926535897932;
+    // Blue arc (-45 to 45 deg)
+    canvas.drawArc(rect, -pi / 4, pi / 2, false, paintBlue);
+    // Green arc (45 to 135 deg)
+    canvas.drawArc(rect, pi / 4, pi / 2, false, paintGreen);
+    // Yellow arc (135 to 225 deg)
+    canvas.drawArc(rect, 3 * pi / 4, pi / 2, false, paintYellow);
+    // Red arc (225 to 315 deg)
+    canvas.drawArc(rect, 5 * pi / 4, pi / 2, false, paintRed);
+
+    // Blue horizontal bar
+    final barPaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.fill;
+    final barRect = Rect.fromLTRB(w * 0.44, h * 0.39, w * 0.96, h * 0.61);
+    canvas.drawRect(barRect, barPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Modal BottomSheet Pemilih Akun Google (Simulasi Google Play Services Account Picker)
+class _GoogleAccountPickerSheet extends StatelessWidget {
+  final UserRole role;
+
+  const _GoogleAccountPickerSheet({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOwner = role == UserRole.pemilik;
+
+    final accounts = isOwner
+        ? [
+            {
+              'name': 'Haji Syamsul Bahri',
+              'email': 'syamsul.bahri@gmail.com',
+              'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
+              'tag': 'Akun Google Utama • Terverifikasi',
+            },
+            {
+              'name': 'Kost Point Partner (Bisnis)',
+              'email': 'partner.kostpoint@gmail.com',
+              'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+              'tag': 'Akun Bisnis Properti Kos',
+            },
+          ]
+        : [
+            {
+              'name': 'Reifan Mardatilla',
+              'email': 'reifan.mardatilla@gmail.com',
+              'avatar': 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
+              'tag': 'Akun Google Pribadi',
+            },
+            {
+              'name': 'Reifan Mardatilla (Akademik)',
+              'email': 'reifan@mhs.upiyptk.ac.id',
+              'avatar': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
+              'tag': 'Email Google Suite Kampus UPI YPTK',
+            },
+          ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceBorderSoft,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: CustomPaint(painter: _GoogleLogoPainter()),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pilih Akun Google',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'untuk melanjutkan ke Kost Point (${isOwner ? "Pemilik Kos" : "Penyewa"})',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondaryMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: AppColors.surfaceBorderSoft),
+          const SizedBox(height: 8),
+          ...accounts.map((acc) {
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              leading: CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(acc['avatar']!),
+                backgroundColor: AppColors.surfaceBorderSoft,
+              ),
+              title: Text(
+                acc['name']!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    acc['email']!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondaryMuted,
+                    ),
+                  ),
+                  Text(
+                    acc['tag']!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryAccent,
+                    ),
+                  ),
+                ],
+              ),
+              trailing: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppColors.textSecondaryMuted,
+              ),
+              onTap: () => Navigator.pop(context, acc),
+            );
+          }),
+          const SizedBox(height: 4),
+          const Divider(height: 1, color: AppColors.surfaceBorderSoft),
+          const SizedBox(height: 8),
+          ListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            leading: const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.backgroundColor,
+              child: Icon(Icons.person_add_alt_1_rounded, size: 18, color: AppColors.textSecondaryMuted),
+            ),
+            title: const Text(
+              'Gunakan Akun Google Lain',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context, {
+                'name': isOwner ? 'Mitra Baru Pemilik' : 'Penyewa Baru Kost Point',
+                'email': isOwner ? 'mitra.baru@gmail.com' : 'penyewa.baru@gmail.com',
+                'avatar': isOwner
+                    ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80'
+                    : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Kost Point akan mengakses info profil publik dan alamat email Google Anda untuk autentikasi otomatis tanpa memasukkan kata sandi.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondaryMuted.withValues(alpha: 0.8),
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

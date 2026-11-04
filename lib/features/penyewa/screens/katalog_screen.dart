@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/dummy_data.dart';
-import '../../../shared/models/user_model.dart';
 import '../../../shared/widgets/kos_card.dart';
 import '../../../shared/widgets/map_picker_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../pemilik/screens/dashboard_pemilik_screen.dart';
 import '../providers/katalog_provider.dart';
+import 'detail_kos_screen.dart';
 
 /// Halaman Katalog Utama (Mode Guest).
 /// Membuka langsung daftar kos dengan pencarian berbasis titik tujuan dinamis di seluruh Indonesia.
@@ -58,7 +58,17 @@ class KatalogScreen extends StatelessWidget {
                     kos: kos,
                     targetLatitude: destination.latitude,
                     targetLongitude: destination.longitude,
-                    onTap: () => _showGuestActionNotice(context, kos.name),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailKosScreen(
+                            kos: kos,
+                            destination: destination,
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
                 childCount: kosList.length,
@@ -78,17 +88,6 @@ class KatalogScreen extends StatelessWidget {
     if (result != null && context.mounted) {
       context.read<KatalogProvider>().updateDestination(result);
     }
-  }
-
-  void _showGuestActionNotice(BuildContext context, String kosName) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _KosDetailGuestPreviewSheet(kosName: kosName),
-    );
   }
 }
 
@@ -420,101 +419,6 @@ class _KosListHeader extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-/// Preview dialog saat Guest mengklik salah satu kos
-class _KosDetailGuestPreviewSheet extends StatelessWidget {
-  final String kosName;
-
-  const _KosDetailGuestPreviewSheet({required this.kosName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceBorderSoft,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            kosName,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.surfaceBorderSoft),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline_rounded, color: AppColors.primaryAccent, size: 20),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Anda berada dalam Mode Guest. Silakan login sebagai Penyewa untuk menghubungi pemilik via WhatsApp atau memberikan ulasan.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.surfaceBorderSoft),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Tutup', style: TextStyle(color: AppColors.textPrimary)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LoginScreen(initialRole: UserRole.penyewa),
-                      ),
-                    );
-                  },
-                  child: const Text('Login Sekarang'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
