@@ -643,7 +643,7 @@ void _showLoginRequiredDialog(BuildContext context, String actionText) {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Anda saat ini berada dalam Mode Guest. Silakan login terlebih dahulu untuk $actionText.',
+                    'Anda belum masuk ke akun. Silakan masuk terlebih dahulu untuk $actionText.',
                     style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
                   ),
                 ),

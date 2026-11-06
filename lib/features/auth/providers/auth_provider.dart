@@ -1,11 +1,24 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../../../shared/models/user_model.dart';
+
+class _StoredUserCredentials {
+  final UserModel user;
+  final String password;
+
+  const _StoredUserCredentials({required this.user, required this.password});
+}
 
 /// Provider Pengelolaan Autentikasi dan Sesi Pengguna
 class AuthProvider with ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Manajemen Registrasi & Verifikasi OTP
+  String? _pendingOtp;
+  String? _pendingOtpEmail;
+  final Map<String, _StoredUserCredentials> _registeredUsers = {};
 
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -71,12 +84,111 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
 
-    // Set user berdasarkan role yang dipilih
-    if (role == UserRole.pemilik) {
-      _currentUser = demoPemilik.copyWith(email: email.trim());
+    final cleanEmail = email.trim().toLowerCase();
+
+    // Periksa apakah user terdaftar lewat registrasi email manual
+    if (_registeredUsers.containsKey(cleanEmail)) {
+      final stored = _registeredUsers[cleanEmail]!;
+      if (stored.password != password) {
+        _errorMessage = 'Kata sandi salah. Silakan periksa kembali.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (stored.user.role != role) {
+        final roleName = stored.user.role == UserRole.pemilik ? 'Pemilik Kos' : 'Penyewa';
+        _errorMessage = 'Akun ini terdaftar sebagai $roleName. Silakan ubah tab pilihan peran di atas.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      _currentUser = stored.user;
     } else {
-      _currentUser = demoPenyewa.copyWith(email: email.trim());
+      // Set user berdasarkan role yang dipilih
+      if (role == UserRole.pemilik) {
+        _currentUser = demoPemilik.copyWith(email: cleanEmail);
+      } else {
+        _currentUser = demoPenyewa.copyWith(email: cleanEmail);
+      }
     }
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  /// Generate dan kirim kode OTP 6-digit untuk verifikasi pendaftaran
+  Future<String> requestRegistrationOtp(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final random = Random();
+    final otpCode = (100000 + random.nextInt(900000)).toString();
+    _pendingOtp = otpCode;
+    _pendingOtpEmail = email.trim().toLowerCase();
+
+    _isLoading = false;
+    notifyListeners();
+    return otpCode;
+  }
+
+  /// Verifikasi Kode OTP dan Selesaikan Pendaftaran Akun Baru
+  Future<bool> verifyOtpAndRegister({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required UserRole role,
+    required String otpInput,
+    String? institution,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final cleanEmail = email.trim().toLowerCase();
+
+    if (_pendingOtp == null || _pendingOtpEmail != cleanEmail) {
+      _errorMessage = 'Sesi OTP kadaluarsa. Silakan kirim ulang kode OTP.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    if (otpInput.trim() != _pendingOtp) {
+      _errorMessage = 'Kode OTP yang Anda masukkan salah. Periksa kembali email Anda.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    // Buat objek UserModel baru
+    final newUser = UserModel(
+      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      name: name.trim(),
+      email: cleanEmail,
+      phone: phone.trim(),
+      role: role,
+      institution: institution?.trim().isNotEmpty == true
+          ? institution!.trim()
+          : (role == UserRole.penyewa ? 'Mahasiswa / Penyewa' : 'Pengelola Properti Kos'),
+      avatarUrl: role == UserRole.pemilik
+          ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80'
+          : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
+    );
+
+    // Simpan ke daftar user terdaftar
+    _registeredUsers[cleanEmail] = _StoredUserCredentials(user: newUser, password: password);
+
+    // Reset OTP pending dan tetapkan sebagai user aktif
+    _pendingOtp = null;
+    _pendingOtpEmail = null;
+    _currentUser = newUser;
 
     _isLoading = false;
     notifyListeners();

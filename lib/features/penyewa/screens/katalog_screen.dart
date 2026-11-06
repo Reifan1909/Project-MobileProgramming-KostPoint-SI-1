@@ -133,7 +133,7 @@ class _KatalogAppBar extends StatelessWidget implements PreferredSizeWidget {
               Text(
                 auth.isLoggedIn
                     ? '${currentDest.city} • ${auth.currentUser?.name.split(' ').first}'
-                    : '${currentDest.city} • Mode Guest',
+                    : '${currentDest.city} • Belum Masuk',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,

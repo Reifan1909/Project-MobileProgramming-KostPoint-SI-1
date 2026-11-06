@@ -33,7 +33,7 @@ class ProfilScreen extends StatelessWidget {
           if (auth.isLoggedIn && user != null)
             _LoggedInHeaderCard(user: user)
           else
-            const _GuestHeaderCard(),
+            const _NotLoggedInHeaderCard(),
           const SizedBox(height: 18),
           if (auth.isLoggedIn && auth.isPemilik) ...[
             _PemilikShortcutCard(
@@ -47,7 +47,7 @@ class ProfilScreen extends StatelessWidget {
             const SizedBox(height: 18),
           ],
           if (!auth.isLoggedIn) ...[
-            const _AuthOptionsCard(),
+            const _LoginActionCard(),
             const SizedBox(height: 18),
           ],
           const _AppSettingsSection(),
@@ -141,8 +141,8 @@ class _LoggedInHeaderCard extends StatelessWidget {
   }
 }
 
-class _GuestHeaderCard extends StatelessWidget {
-  const _GuestHeaderCard();
+class _NotLoggedInHeaderCard extends StatelessWidget {
+  const _NotLoggedInHeaderCard();
 
   @override
   Widget build(BuildContext context) {
@@ -157,11 +157,11 @@ class _GuestHeaderCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundColor: AppColors.primaryAccent.withValues(alpha: 0.15),
+            backgroundColor: AppColors.surfaceBorderSoft.withValues(alpha: 0.6),
             child: const Icon(
-              Icons.person_rounded,
+              Icons.person_outline_rounded,
               size: 32,
-              color: AppColors.primaryAccent,
+              color: AppColors.textSecondaryMuted,
             ),
           ),
           const SizedBox(width: 14),
@@ -170,7 +170,7 @@ class _GuestHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pengguna Tamu',
+                  'Belum Masuk Akun',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -179,7 +179,7 @@ class _GuestHeaderCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Mode Guest • Pencarian Bebas',
+                  'Masuk untuk mengakses semua fitur',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondaryMuted,
@@ -191,16 +191,16 @@ class _GuestHeaderCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.backgroundColor,
+              color: AppColors.surfaceBorderSoft.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.surfaceBorderSoft),
             ),
             child: const Text(
-              'Guest',
+              'Belum Masuk',
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryAccent,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondaryMuted,
               ),
             ),
           ),
@@ -247,8 +247,9 @@ class _PemilikShortcutCard extends StatelessWidget {
   }
 }
 
-class _AuthOptionsCard extends StatelessWidget {
-  const _AuthOptionsCard();
+/// Kartu Aksi Masuk Akun Tunggal
+class _LoginActionCard extends StatelessWidget {
+  const _LoginActionCard();
 
   @override
   Widget build(BuildContext context) {
@@ -272,86 +273,47 @@ class _AuthOptionsCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Pilih peranmu untuk mengakses fitur interaktif atau pengelolaan kos:',
+            'Akses ulasan kos, simpan favorit, dan pengelolaan kos dengan masuk ke akun Anda.',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondaryMuted,
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 14),
-          _ProfileOptionTile(
-            icon: Icons.school_rounded,
-            title: 'Masuk sebagai Penyewa',
-            subtitle: 'Ulasan, rating bintang, dan hubungi pemilik via WhatsApp.',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LoginScreen(initialRole: UserRole.penyewa),
+          Material(
+            color: AppColors.backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.surfaceBorderSoft),
+            ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryAccent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          _ProfileOptionTile(
-            icon: Icons.storefront_rounded,
-            title: 'Masuk sebagai Pemilik Kos',
-            subtitle: 'Kelola sisa kamar, foto kos, pasang pin peta & iklan Pro.',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LoginScreen(initialRole: UserRole.pemilik),
-                ),
-              );
-            },
+                child: const Icon(Icons.login_rounded, color: AppColors.primaryAccent, size: 20),
+              ),
+              title: const Text(
+                'Masuk ke Akun',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Pilih login sebagai Penyewa atau Pemilik Kos',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.primaryAccent),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProfileOptionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ProfileOptionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceBorderSoft),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primaryAccent.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: AppColors.primaryAccent, size: 20),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondaryMuted),
-        onTap: onTap,
       ),
     );
   }

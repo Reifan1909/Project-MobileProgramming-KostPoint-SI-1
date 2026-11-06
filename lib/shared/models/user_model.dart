@@ -37,7 +37,7 @@ class UserModel {
       case UserRole.pemilik:
         return 'Pemilik Kos';
       case UserRole.guest:
-        return 'Tamu (Guest)';
+        return 'Belum Masuk';
     }
   }
 
