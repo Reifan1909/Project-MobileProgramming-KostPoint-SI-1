@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/models/user_model.dart';
 import '../providers/auth_provider.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 /// Halaman Autentikasi Login Utama.
@@ -64,6 +65,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final resultEmail = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(
+          initialEmail: _emailController.text.trim(),
+        ),
+      ),
+    );
+
+    if (resultEmail != null && resultEmail.isNotEmpty && mounted) {
+      setState(() {
+        _emailController.text = resultEmail;
+        _passwordController.clear();
+      });
+    }
+  }
+
   void _handleGoogleLogin() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -104,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscurePassword: _obscurePassword,
                 onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                 onSubmit: _handleLogin,
+                onForgotPassword: _handleForgotPassword,
                 onRegister: () {
                   Navigator.push(
                     context,
@@ -305,6 +325,7 @@ class _LoginFormCard extends StatelessWidget {
   final bool obscurePassword;
   final VoidCallback onToggleObscure;
   final VoidCallback onSubmit;
+  final VoidCallback onForgotPassword;
   final VoidCallback onRegister;
 
   const _LoginFormCard({
@@ -314,6 +335,7 @@ class _LoginFormCard extends StatelessWidget {
     required this.obscurePassword,
     required this.onToggleObscure,
     required this.onSubmit,
+    required this.onForgotPassword,
     required this.onRegister,
   });
 
@@ -374,6 +396,25 @@ class _LoginFormCard extends StatelessWidget {
                   color: AppColors.textSecondaryMuted,
                 ),
                 onPressed: onToggleObscure,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onForgotPassword,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Lupa Kata Sandi?',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryAccent,
+                ),
               ),
             ),
           ),

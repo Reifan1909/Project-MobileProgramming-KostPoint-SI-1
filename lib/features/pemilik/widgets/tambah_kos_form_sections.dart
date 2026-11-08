@@ -1,41 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/dummy_data.dart';
+import '../../../shared/widgets/kos_image_viewer.dart';
 import '../../../shared/widgets/map_picker_dialog.dart';
-
-/// Preset foto kamar kos berkualitas untuk kemudahan input
-class RoomPhotoPreset {
-  final String label;
-  final String url;
-
-  const RoomPhotoPreset({required this.label, required this.url});
-}
 
 class FormConstants {
   FormConstants._();
-
-  static const List<RoomPhotoPreset> roomPresets = [
-    RoomPhotoPreset(
-      label: 'Kamar Modern AC',
-      url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&q=80',
-    ),
-    RoomPhotoPreset(
-      label: 'Kamar Minimalis',
-      url: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&q=80',
-    ),
-    RoomPhotoPreset(
-      label: 'Kamar Kayu Asri',
-      url: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&q=80',
-    ),
-    RoomPhotoPreset(
-      label: 'Kamar Mezzanine',
-      url: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80',
-    ),
-    RoomPhotoPreset(
-      label: 'Kamar Estetik Putih',
-      url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
-    ),
-  ];
 
   static const List<String> availableFacilities = [
     'WiFi Cepat',
@@ -513,7 +484,7 @@ class _RoomCounterTile extends StatelessWidget {
   }
 }
 
-/// Bagian 4: Pemilihan Foto Kamar (Preset + URL Custom + Live Preview)
+/// Bagian 4: Pemilihan & Unggah Foto Kamar / Kos
 class KosPhotoPickerSection extends StatelessWidget {
   final TextEditingController photoUrlController;
   final String currentPhotoUrl;
@@ -526,8 +497,36 @@ class KosPhotoPickerSection extends StatelessWidget {
     required this.onPhotoSelected,
   });
 
+  Future<void> _pickImage(BuildContext context, ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        photoUrlController.text = image.path;
+        onPhotoSelected(image.path);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memilih foto: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = currentPhotoUrl.trim().isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -540,67 +539,123 @@ class KosPhotoPickerSection extends StatelessWidget {
         children: [
           const _SectionHeader(
             title: 'Foto Kamar & Sampul',
-            subtitle: 'Pilih preset foto kamar berkualitas atau tempel link URL foto kos Anda.',
-            icon: Icons.photo_library_rounded,
+            subtitle: 'Unggah foto kos langsung dari galeri HP atau kamera Anda.',
+            icon: Icons.add_a_photo_rounded,
           ),
           const SizedBox(height: 14),
-          _PhotoPreviewBox(photoUrl: currentPhotoUrl),
-          const SizedBox(height: 12),
-          const Text(
-            'Preset Foto Kamar Siap Pakai:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 72,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: FormConstants.roomPresets.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final preset = FormConstants.roomPresets[index];
-                final isSelected = currentPhotoUrl == preset.url;
-
-                return InkWell(
-                  onTap: () {
-                    photoUrlController.text = preset.url;
-                    onPhotoSelected(preset.url);
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 72,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(preset.url, fit: BoxFit.cover),
-                        if (isSelected)
-                          Container(
-                            color: AppColors.primaryAccent.withValues(alpha: 0.35),
-                            child: const Center(
-                              child: Icon(Icons.check_circle_rounded, color: AppColors.white, size: 20),
-                            ),
-                          ),
-                      ],
+          if (hasPhoto)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: SizedBox(
+                    height: 180,
+                    width: double.infinity,
+                    child: KosImageViewer(
+                      imagePath: currentPhotoUrl,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                );
-              },
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                      tooltip: 'Hapus Foto',
+                      onPressed: () {
+                        photoUrlController.clear();
+                        onPhotoSelected('');
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            InkWell(
+              onTap: () => _pickImage(context, ImageSource.gallery),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 140,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primaryAccent.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_photo_alternate_rounded,
+                      size: 44,
+                      color: AppColors.primaryAccent,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Ketuk untuk Pilih Foto dari Galeri HP',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryAccent,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Format JPG, PNG (Maks 10MB)',
+                      style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickImage(context, ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_rounded, size: 18),
+                  label: const Text('Buka Galeri'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryAccent,
+                    side: const BorderSide(color: AppColors.primaryAccent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickImage(context, ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                  label: const Text('Buka Kamera'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.surfaceBorderSoft),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: photoUrlController,
             decoration: const InputDecoration(
-              labelText: 'Atau Tempel URL Foto Kamar',
-              hintText: 'https://images.unsplash.com/...',
+              labelText: 'Atau Tempel Tautan / URL Foto (Opsional)',
+              hintText: 'https://...',
               prefixIcon: Icon(Icons.link_rounded),
             ),
             onChanged: onPhotoSelected,
@@ -611,40 +666,8 @@ class KosPhotoPickerSection extends StatelessWidget {
   }
 }
 
-class _PhotoPreviewBox extends StatelessWidget {
-  final String photoUrl;
-
-  const _PhotoPreviewBox({required this.photoUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 150,
-        width: double.infinity,
-        color: AppColors.surfaceBorderSoft,
-        child: Image.network(
-          photoUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.broken_image_rounded, size: 36, color: AppColors.textSecondaryMuted),
-                SizedBox(height: 6),
-                Text('URL Foto tidak dapat dimuat', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Bagian 5: Fasilitas Kamar & Bersama
-class KosFacilitiesPickerSection extends StatelessWidget {
+/// Bagian 5: Fasilitas Kamar & Bersama (Klik Cepat + Input Fasilitas Kustom Bebas)
+class KosFacilitiesPickerSection extends StatefulWidget {
   final List<String> selectedFacilities;
   final ValueChanged<List<String>> onFacilitiesChanged;
 
@@ -655,7 +678,37 @@ class KosFacilitiesPickerSection extends StatelessWidget {
   });
 
   @override
+  State<KosFacilitiesPickerSection> createState() => _KosFacilitiesPickerSectionState();
+}
+
+class _KosFacilitiesPickerSectionState extends State<KosFacilitiesPickerSection> {
+  final _customFacilityController = TextEditingController();
+
+  @override
+  void dispose() {
+    _customFacilityController.dispose();
+    super.dispose();
+  }
+
+  void _addCustomFacility() {
+    final text = _customFacilityController.text.trim();
+    if (text.isEmpty) return;
+
+    if (!widget.selectedFacilities.contains(text)) {
+      final updated = List<String>.from(widget.selectedFacilities)..add(text);
+      widget.onFacilitiesChanged(updated);
+    }
+    _customFacilityController.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Gabungkan fasilitas bawaan dengan fasilitas kustom yang baru ditambahkan
+    final allFacilities = <String>{
+      ...FormConstants.availableFacilities,
+      ...widget.selectedFacilities,
+    }.toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -668,20 +721,25 @@ class KosFacilitiesPickerSection extends StatelessWidget {
         children: [
           const _SectionHeader(
             title: 'Fasilitas Kos & Kamar',
-            subtitle: 'Pilih fasilitas yang tersedia untuk menarik minat calon penyewa.',
+            subtitle: 'Pilih fasilitas umum di bawah ini atau ketik fasilitas khusus kos Anda.',
             icon: Icons.checklist_rounded,
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: FormConstants.availableFacilities.map((facility) {
-              final isSelected = selectedFacilities.contains(facility);
+            children: allFacilities.map((facility) {
+              final isSelected = widget.selectedFacilities.contains(facility);
+              final isCustom = !FormConstants.availableFacilities.contains(facility);
+
               return FilterChip(
                 label: Text(facility),
                 selected: isSelected,
                 selectedColor: AppColors.primaryAccent.withValues(alpha: 0.18),
                 checkmarkColor: AppColors.primaryAccent,
+                avatar: isCustom
+                    ? const Icon(Icons.star_border_rounded, size: 14, color: AppColors.primaryAccent)
+                    : null,
                 labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -695,16 +753,49 @@ class KosFacilitiesPickerSection extends StatelessWidget {
                   ),
                 ),
                 onSelected: (selected) {
-                  final list = List<String>.from(selectedFacilities);
+                  final list = List<String>.from(widget.selectedFacilities);
                   if (selected) {
                     list.add(facility);
                   } else {
                     list.remove(facility);
                   }
-                  onFacilitiesChanged(list);
+                  widget.onFacilitiesChanged(list);
                 },
               );
             }).toList(),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Tambah Fasilitas Lainnya:',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _customFacilityController,
+                  decoration: const InputDecoration(
+                    hintText: 'Cth: Balkon Pribadi, Dapur Bersama',
+                    prefixIcon: Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryAccent),
+                    isDense: true,
+                  ),
+                  onFieldSubmitted: (_) => _addCustomFacility(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addCustomFacility,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Tambah'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -738,8 +829,8 @@ class KosContactProSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionHeader(
-            title: 'Kontak WhatsApp & Status Iklan',
-            subtitle: 'Nomor WhatsApp untuk calon penyewa dan opsi promosi.',
+            title: 'Kontak WhatsApp Pemilik',
+            subtitle: 'Nomor WhatsApp aktif untuk dihubungi langsung oleh calon penyewa.',
             icon: Icons.phone_android_rounded,
           ),
           const SizedBox(height: 14),
@@ -760,60 +851,6 @@ class KosContactProSection extends StatelessWidget {
               }
               return null;
             },
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isPro
-                  ? AppColors.primaryAccent.withValues(alpha: 0.1)
-                  : AppColors.backgroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isPro ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isPro ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: isPro ? AppColors.white : AppColors.textSecondaryMuted,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pasang Sebagai Kos PRO',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        'Kos diprioritaskan tampil di urutan teratas katalog pencarian.',
-                        style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: isPro,
-                  activeThumbColor: AppColors.primaryAccent,
-                  onChanged: onProChanged,
-                ),
-              ],
-            ),
           ),
         ],
       ),

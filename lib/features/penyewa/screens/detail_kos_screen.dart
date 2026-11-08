@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/dummy_data.dart';
 import '../../../shared/models/kos_model.dart';
+import '../../../shared/widgets/kos_image_viewer.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/katalog_provider.dart';
 import '../widgets/detail_kos_components.dart';
@@ -66,15 +67,9 @@ class DetailKosScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    kos.imageUrl,
+                  KosImageViewer(
+                    imagePath: kos.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.surfaceBorderSoft,
-                      child: const Center(
-                        child: Icon(Icons.apartment_rounded, size: 64, color: AppColors.textSecondaryMuted),
-                      ),
-                    ),
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(

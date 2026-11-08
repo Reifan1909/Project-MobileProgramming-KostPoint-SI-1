@@ -6,7 +6,6 @@ import '../../../shared/widgets/kos_card.dart';
 import '../../../shared/widgets/map_picker_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
-import '../../pemilik/screens/dashboard_pemilik_screen.dart';
 import '../providers/katalog_provider.dart';
 import 'detail_kos_screen.dart';
 
@@ -48,33 +47,78 @@ class KatalogScreen extends StatelessWidget {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final kos = kosList[index];
-                  return KosCard(
-                    kos: kos,
-                    targetLatitude: destination.latitude,
-                    targetLongitude: destination.longitude,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DetailKosScreen(
-                            kos: kos,
-                            destination: destination,
-                          ),
+          if (kosList.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryAccent.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    },
-                  );
-                },
-                childCount: kosList.length,
+                        child: const Icon(
+                          Icons.apartment_rounded,
+                          size: 48,
+                          color: AppColors.primaryAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Belum Ada Kos Terdaftar',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Saat ini belum ada properti kos yang didaftarkan. Kos yang didaftarkan oleh pemilik kos akan otomatis muncul di sini.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondaryMuted,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final kos = kosList[index];
+                    return KosCard(
+                      kos: kos,
+                      targetLatitude: destination.latitude,
+                      targetLongitude: destination.longitude,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DetailKosScreen(
+                              kos: kos,
+                              destination: destination,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  childCount: kosList.length,
+                ),
               ),
             ),
-          ),
           const SliverToBoxAdapter(
             child: SizedBox(height: 32),
           ),
@@ -147,61 +191,52 @@ class _KatalogAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 16),
-          child: auth.isPemilik
-              ? ElevatedButton.icon(
+          child: auth.isLoggedIn
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryAccent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primaryAccent),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        auth.isPemilik ? Icons.storefront_rounded : Icons.verified_user_rounded,
+                        size: 14,
+                        color: AppColors.primaryAccent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        auth.currentUser?.name.split(' ').first ??
+                            (auth.isPemilik ? 'Pemilik' : 'Penyewa'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : OutlinedButton.icon(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const DashboardPemilikScreen()),
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
                     );
                   },
-                  icon: const Icon(Icons.dashboard_rounded, size: 16),
-                  label: const Text('Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                )
-              : auth.isPenyewa
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryAccent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primaryAccent),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.verified_user_rounded, size: 14, color: AppColors.primaryAccent),
-                          const SizedBox(width: 4),
-                          Text(
-                            auth.currentUser?.name.split(' ').first ?? 'Penyewa',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryAccent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.login_rounded, size: 16),
-                      label: const Text('Masuk'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryAccent,
-                        side: const BorderSide(color: AppColors.primaryAccent),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      ),
+                  icon: const Icon(Icons.login_rounded, size: 16),
+                  label: const Text('Masuk'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryAccent,
+                    side: const BorderSide(color: AppColors.primaryAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                ),
         ),
       ],
     );

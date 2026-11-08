@@ -24,6 +24,11 @@ class AuthProvider with ChangeNotifier {
   String? _pendingOtp;
   String? _pendingOtpEmail;
   EmailOtpResult? _lastOtpResult;
+
+  // Manajemen Reset Kata Sandi
+  String? _resetOtp;
+  String? _resetOtpEmail;
+
   final Map<String, _StoredUserCredentials> _registeredUsers = {};
 
   static const String _storageKeyUsers = 'kostpoint_registered_users_v2';
@@ -38,6 +43,12 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   EmailOtpResult? get lastOtpResult => _lastOtpResult;
   String? get pendingOtp => _pendingOtp;
+  String? get resetOtp => _resetOtp;
+
+  bool isEmailRegistered(String email) =>
+      _registeredUsers.containsKey(email.trim().toLowerCase());
+  UserModel? getUserByEmail(String email) =>
+      _registeredUsers[email.trim().toLowerCase()]?.user;
 
   bool get isLoggedIn =>
       _currentUser != null && _currentUser!.role != UserRole.guest;
@@ -63,7 +74,7 @@ class AuthProvider with ChangeNotifier {
     phone: '081298765432',
     role: UserRole.pemilik,
     institution: 'Pengelola Kos Graha YPTK',
-    managedKosIds: ['kos_1'],
+    managedKosIds: [],
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
   );
 
@@ -85,6 +96,7 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final usersRaw = prefs.getString(_storageKeyUsers);
       if (usersRaw != null) {
+        _registeredUsers.clear();
         final Map<String, dynamic> decoded = jsonDecode(usersRaw);
         decoded.forEach((key, val) {
           final map = val as Map<String, dynamic>;
@@ -324,6 +336,137 @@ class AuthProvider with ChangeNotifier {
       _saveUsersToStorage();
       notifyListeners();
     }
+  }
+
+  /// Generate dan kirim kode OTP 6-digit untuk Reset Kata Sandi
+  Future<String> requestPasswordResetOtp({required String email}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final cleanEmail = email.trim().toLowerCase();
+
+    if (!_registeredUsers.containsKey(cleanEmail)) {
+      _errorMessage = 'Email belum terdaftar di sistem Kost Point.';
+      _isLoading = false;
+      notifyListeners();
+      return '';
+    }
+
+    final targetUser = _registeredUsers[cleanEmail]!.user;
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final random = Random();
+    final otpCode = (100000 + random.nextInt(900000)).toString();
+    _resetOtp = otpCode;
+    _resetOtpEmail = cleanEmail;
+
+    _lastOtpResult = await EmailOtpService.sendPasswordResetOtp(
+      targetEmail: cleanEmail,
+      otpCode: otpCode,
+      recipientName: targetUser.name,
+    );
+
+    _isLoading = false;
+    notifyListeners();
+    return otpCode;
+  }
+
+  /// Verifikasi kode OTP dan simpan kata sandi baru
+  Future<bool> verifyOtpAndResetPassword({
+    required String email,
+    required String otpInput,
+    required String newPassword,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    final cleanEmail = email.trim().toLowerCase();
+
+    if (_resetOtp == null || _resetOtpEmail != cleanEmail) {
+      _errorMessage = 'Sesi reset kata sandi telah berakhir. Silakan minta kode baru.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    if (otpInput.trim() != _resetOtp) {
+      _errorMessage = 'Kode OTP verifikasi salah. Periksa kembali email Anda.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    if (newPassword.trim().length < 6) {
+      _errorMessage = 'Kata sandi baru minimal 6 karakter.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    final existingCred = _registeredUsers[cleanEmail];
+    if (existingCred == null) {
+      _errorMessage = 'Data akun tidak ditemukan.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    // Perbarui kata sandi
+    _registeredUsers[cleanEmail] = _StoredUserCredentials(
+      user: existingCred.user,
+      password: newPassword.trim(),
+    );
+
+    _resetOtp = null;
+    _resetOtpEmail = null;
+    _errorMessage = null;
+
+    // Simpan perubahan ke storage lokal
+    await _saveUsersToStorage();
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  /// Hapus akun yang sedang login secara permanen dengan konfirmasi kata sandi
+  Future<bool> deleteCurrentAccount({required String confirmationPassword}) async {
+    if (_currentUser == null) {
+      _errorMessage = 'Tidak ada sesi akun aktif yang dapat dihapus.';
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final cleanEmail = _currentUser!.email.toLowerCase();
+    final stored = _registeredUsers[cleanEmail];
+
+    if (stored == null || stored.password != confirmationPassword) {
+      _errorMessage = 'Kata sandi konfirmasi salah. Penghapusan akun dibatalkan demi keamanan.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    // Hapus akun dari daftar pengguna terdaftar
+    _registeredUsers.remove(cleanEmail);
+    _currentUser = null;
+    _errorMessage = null;
+
+    // Simpan state baru ke SharedPreferences
+    await _saveUsersToStorage();
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
   }
 
   /// Logout kembali ke Mode Tamu

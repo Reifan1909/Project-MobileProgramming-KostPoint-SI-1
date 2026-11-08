@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import '../../../core/constants/app_colors.dart';
+import 'kos_image_viewer.dart';
 import '../../core/utils/distance_calculator.dart';
 import '../models/kos_model.dart';
 
@@ -34,10 +35,8 @@ class KosCard extends StatelessWidget {
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: kos.isPremium
-              ? AppColors.primaryAccent.withValues(alpha: 0.6)
-              : AppColors.surfaceBorderSoft,
-          width: kos.isPremium ? 1.5 : 1.0,
+          color: AppColors.surfaceBorderSoft,
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -82,33 +81,10 @@ class _KosCoverImage extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              kos.imageUrl,
+            KosImageViewer(
+              imagePath: kos.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.surfaceBorderSoft,
-                child: const Icon(
-                  Icons.apartment_rounded,
-                  size: 48,
-                  color: AppColors.textSecondaryMuted,
-                ),
-              ),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: AppColors.surfaceBorderSoft,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              },
             ),
-            if (kos.isPremium)
-              Positioned(
-                top: 10,
-                left: 10,
-                child: _BadgePro(),
-              ),
             Positioned(
               top: 10,
               right: 10,
@@ -268,42 +244,6 @@ class _KosInformation extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Visual Badge khusus Kos PRO / Unggulan
-class _BadgePro extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primaryAccent,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.workspace_premium_rounded, size: 14, color: AppColors.white),
-          SizedBox(width: 4),
-          Text(
-            'PRO / Teratas',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
           ),
         ],
       ),

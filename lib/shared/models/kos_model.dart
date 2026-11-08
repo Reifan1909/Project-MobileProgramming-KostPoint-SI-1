@@ -90,5 +90,54 @@ class KosModel {
       description: description ?? this.description,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'address': address,
+      'district': district,
+      'price': price,
+      'pricePeriod': pricePeriod,
+      'type': type,
+      'latitude': latitude,
+      'longitude': longitude,
+      'imageUrl': imageUrl,
+      'remainingRooms': remainingRooms,
+      'totalRooms': totalRooms,
+      'facilities': facilities,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'isPremium': isPremium,
+      'ownerPhone': ownerPhone,
+      'description': description,
+    };
+  }
+
+  factory KosModel.fromJson(Map<String, dynamic> json) {
+    return KosModel(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+      district: json['district'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      pricePeriod: json['pricePeriod'] as String? ?? '/ bulan',
+      type: json['type'] as String? ?? 'Campur',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['imageUrl'] as String? ?? '',
+      remainingRooms: json['remainingRooms'] as int? ?? 0,
+      totalRooms: json['totalRooms'] as int? ?? 0,
+      facilities: (json['facilities'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['reviewCount'] as int? ?? 0,
+      isPremium: json['isPremium'] as bool? ?? false,
+      ownerPhone: json['ownerPhone'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+    );
+  }
 }
 

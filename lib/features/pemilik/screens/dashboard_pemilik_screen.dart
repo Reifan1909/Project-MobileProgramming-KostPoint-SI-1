@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/models/kos_model.dart';
+import '../../../shared/widgets/kos_image_viewer.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../penyewa/providers/katalog_provider.dart';
 import 'tambah_kos_screen.dart';
@@ -22,21 +23,19 @@ class DashboardPemilikScreen extends StatelessWidget {
       if (user != null && user.managedKosIds.isNotEmpty) {
         return user.managedKosIds.contains(k.id);
       }
-      return k.id == 'kos_1';
+      return false;
     }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        title: const Text('Dashboard Pemilik Kos'),
+        title: const Text('Kos Saya'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-            tooltip: 'Keluar',
-            onPressed: () {
-              auth.logout();
-              Navigator.pop(context);
-            },
+            icon: const Icon(Icons.add_business_rounded, color: AppColors.primaryAccent),
+            tooltip: 'Tambah Kos Baru',
+            onPressed: () => _openAddKosModal(context),
           ),
           const SizedBox(width: 8),
         ],
@@ -160,14 +159,15 @@ class _OwnerProfileHeader extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primaryAccent,
+              color: AppColors.primaryAccent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.primaryAccent.withValues(alpha: 0.3)),
             ),
             child: const Text(
-              'MITRA PRO',
-              style: TextStyle(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w800),
+              'Pemilik Kos',
+              style: TextStyle(color: AppColors.primaryAccent, fontSize: 11, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -305,17 +305,11 @@ class _ManagedKosItemCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  kos.imageUrl,
+                child: KosImageViewer(
+                  imagePath: kos.imageUrl,
                   width: 64,
                   height: 64,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 64,
-                    height: 64,
-                    color: AppColors.surfaceBorderSoft,
-                    child: const Icon(Icons.apartment_rounded, color: AppColors.textSecondaryMuted),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -323,31 +317,11 @@ class _ManagedKosItemCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        if (kos.isPremium) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryAccent,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'PRO',
-                              style: TextStyle(color: AppColors.white, fontSize: 9, fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            kos.name,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      kos.name,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(

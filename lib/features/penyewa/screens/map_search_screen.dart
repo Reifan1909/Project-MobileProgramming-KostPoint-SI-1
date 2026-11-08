@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/utils/distance_calculator.dart';
 import '../../../shared/models/kos_model.dart';
+import '../../../shared/widgets/kos_image_viewer.dart';
 import '../../../shared/widgets/map_picker_dialog.dart';
 import '../providers/katalog_provider.dart';
 import 'detail_kos_screen.dart';
@@ -349,8 +350,8 @@ class _KosMarkerPin extends StatelessWidget {
             color: isSelected ? AppColors.textPrimary : AppColors.cardSurface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: kos.isPremium ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
-              width: kos.isPremium ? 2 : 1,
+              color: isSelected ? AppColors.primaryAccent : AppColors.surfaceBorderSoft,
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -360,30 +361,21 @@ class _KosMarkerPin extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (kos.isPremium) ...[
-                const Icon(Icons.verified_rounded, size: 10, color: AppColors.primaryAccent),
-                const SizedBox(width: 3),
-              ],
-              Text(
-                kos.name.split(' ').take(2).join(' '),
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? AppColors.white : AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          child: Text(
+            kos.name.split(' ').take(2).join(' '),
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: isSelected ? AppColors.white : AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         Icon(
           Icons.location_on_rounded,
           size: isSelected ? 30 : 24,
-          color: kos.isPremium ? AppColors.primaryAccent : AppColors.textSecondaryMuted,
+          color: isSelected ? AppColors.primaryAccent : AppColors.textSecondaryMuted,
         ),
       ],
     );
@@ -517,20 +509,14 @@ class _KosMapPreviewCard extends StatelessWidget {
         child: Row(
           children: [
             ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              kos.imageUrl,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+              borderRadius: BorderRadius.circular(12),
+              child: KosImageViewer(
+                imagePath: kos.imageUrl,
                 width: 80,
                 height: 80,
-                color: AppColors.surfaceBorderSoft,
-                child: const Icon(Icons.apartment_rounded, color: AppColors.textSecondaryMuted),
+                fit: BoxFit.cover,
               ),
             ),
-          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

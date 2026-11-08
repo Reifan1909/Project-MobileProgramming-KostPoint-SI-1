@@ -25,7 +25,7 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
   final _addressController = TextEditingController(text: 'Jl. Raya Lubuk Begalung No. 25');
   final _districtController = TextEditingController(text: 'Lubuk Begalung, Padang');
   final _priceController = TextEditingController(text: '750000');
-  final _photoUrlController = TextEditingController(text: FormConstants.roomPresets.first.url);
+  final _photoUrlController = TextEditingController();
   final _phoneController = TextEditingController();
 
   String _selectedType = 'Putra';
@@ -33,8 +33,8 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
   double _longitude = 100.399587;
   int _totalRooms = 10;
   int _remainingRooms = 4;
-  late String _currentPhotoUrl;
-  bool _isPro = true;
+  String _currentPhotoUrl = '';
+  bool _isPro = false;
 
   List<String> _selectedFacilities = [
     'WiFi Cepat',
@@ -46,7 +46,6 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
   @override
   void initState() {
     super.initState();
-    _currentPhotoUrl = FormConstants.roomPresets.first.url;
     final currentUser = context.read<AuthProvider>().currentUser;
     if (currentUser != null && currentUser.phone.isNotEmpty) {
       _phoneController.text = currentUser.phone;
@@ -99,6 +98,16 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
       return;
     }
 
+    if (_currentPhotoUrl.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon pilih atau unggah foto kamar/kos terlebih dahulu.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
     final priceCleaned = double.tryParse(_priceController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     final newKosId = 'kos_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -112,15 +121,13 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
       type: _selectedType,
       latitude: _latitude,
       longitude: _longitude,
-      imageUrl: _currentPhotoUrl.trim().isNotEmpty
-          ? _currentPhotoUrl.trim()
-          : FormConstants.roomPresets.first.url,
+      imageUrl: _currentPhotoUrl.trim(),
       remainingRooms: _remainingRooms,
       totalRooms: _totalRooms,
       facilities: _selectedFacilities,
       rating: 5.0,
       reviewCount: 0,
-      isPremium: _isPro,
+      isPremium: false,
       ownerPhone: _phoneController.text.trim(),
       description: _descriptionController.text.trim().isNotEmpty
           ? _descriptionController.text.trim()

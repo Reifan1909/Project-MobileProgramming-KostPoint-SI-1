@@ -31,28 +31,6 @@ class DetailHeaderInfo extends StatelessWidget {
           Row(
             children: [
               _TypeBadge(type: kos.type),
-              const SizedBox(width: 8),
-              if (kos.isPremium) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryAccent,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.verified_rounded, size: 12, color: AppColors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        'PRO / Unggulan',
-                        style: TextStyle(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
               const Spacer(),
               _AvailabilityBadge(remaining: kos.remainingRooms, total: kos.totalRooms),
             ],
