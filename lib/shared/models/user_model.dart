@@ -62,5 +62,34 @@ class UserModel {
       managedKosIds: managedKosIds ?? this.managedKosIds,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role.name,
+      'avatarUrl': avatarUrl,
+      'institution': institution,
+      'managedKosIds': managedKosIds,
+    };
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      role: UserRole.values.firstWhere(
+        (e) => e.name == json['role'],
+        orElse: () => UserRole.penyewa,
+      ),
+      avatarUrl: json['avatarUrl'] as String?,
+      institution: json['institution'] as String?,
+      managedKosIds: (json['managedKosIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+    );
+  }
 }
 
