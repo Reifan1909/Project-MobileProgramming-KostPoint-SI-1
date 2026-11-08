@@ -25,7 +25,6 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
   final _addressController = TextEditingController(text: 'Jl. Raya Lubuk Begalung No. 25');
   final _districtController = TextEditingController(text: 'Lubuk Begalung, Padang');
   final _priceController = TextEditingController(text: '750000');
-  final _photoUrlController = TextEditingController();
   final _phoneController = TextEditingController();
 
   String _selectedType = 'Putra';
@@ -33,7 +32,7 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
   double _longitude = 100.399587;
   int _totalRooms = 10;
   int _remainingRooms = 4;
-  String _currentPhotoUrl = '';
+  List<String> _photoUrls = [];
   bool _isPro = false;
 
   List<String> _selectedFacilities = [
@@ -61,7 +60,6 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
     _addressController.dispose();
     _districtController.dispose();
     _priceController.dispose();
-    _photoUrlController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -98,10 +96,10 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
       return;
     }
 
-    if (_currentPhotoUrl.trim().isEmpty) {
+    if (_photoUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Mohon pilih atau unggah foto kamar/kos terlebih dahulu.'),
+          content: Text('Mohon pilih atau unggah minimal 1 foto kamar/kos.'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -121,7 +119,8 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
       type: _selectedType,
       latitude: _latitude,
       longitude: _longitude,
-      imageUrl: _currentPhotoUrl.trim(),
+      imageUrl: _photoUrls.first,
+      images: _photoUrls,
       remainingRooms: _remainingRooms,
       totalRooms: _totalRooms,
       facilities: _selectedFacilities,
@@ -183,9 +182,8 @@ class _TambahKosScreenState extends State<TambahKosScreen> {
             ),
             const SizedBox(height: 16),
             KosPhotoPickerSection(
-              photoUrlController: _photoUrlController,
-              currentPhotoUrl: _currentPhotoUrl,
-              onPhotoSelected: (url) => setState(() => _currentPhotoUrl = url),
+              photoUrls: _photoUrls,
+              onPhotosChanged: (list) => setState(() => _photoUrls = list),
             ),
             const SizedBox(height: 16),
             KosFacilitiesPickerSection(

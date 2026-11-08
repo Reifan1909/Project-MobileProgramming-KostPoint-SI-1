@@ -484,35 +484,50 @@ class _RoomCounterTile extends StatelessWidget {
   }
 }
 
-/// Bagian 4: Pemilihan & Unggah Foto Kamar / Kos
-class KosPhotoPickerSection extends StatelessWidget {
-  final TextEditingController photoUrlController;
-  final String currentPhotoUrl;
-  final ValueChanged<String> onPhotoSelected;
+/// Bagian 4: Pemilihan & Unggah Beberapa Foto Kamar / Kos
+class KosPhotoPickerSection extends StatefulWidget {
+  final List<String> photoUrls;
+  final ValueChanged<List<String>> onPhotosChanged;
 
   const KosPhotoPickerSection({
     super.key,
-    required this.photoUrlController,
-    required this.currentPhotoUrl,
-    required this.onPhotoSelected,
+    required this.photoUrls,
+    required this.onPhotosChanged,
   });
 
-  Future<void> _pickImage(BuildContext context, ImageSource source) async {
+  @override
+  State<KosPhotoPickerSection> createState() => _KosPhotoPickerSectionState();
+}
+
+class _KosPhotoPickerSectionState extends State<KosPhotoPickerSection> {
+  final _urlController = TextEditingController();
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickMultiFromGallery() async {
     try {
       final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
+      final List<XFile> images = await picker.pickMultiImage(
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 85,
       );
 
-      if (image != null) {
-        photoUrlController.text = image.path;
-        onPhotoSelected(image.path);
+      if (images.isNotEmpty) {
+        final updated = List<String>.from(widget.photoUrls);
+        for (final img in images) {
+          if (!updated.contains(img.path)) {
+            updated.add(img.path);
+          }
+        }
+        widget.onPhotosChanged(updated);
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memilih foto: $e'),
@@ -523,9 +538,51 @@ class KosPhotoPickerSection extends StatelessWidget {
     }
   }
 
+  Future<void> _pickFromCamera() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        final updated = List<String>.from(widget.photoUrls)..add(image.path);
+        widget.onPhotosChanged(updated);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengambil foto kamera: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  void _addUrlPhoto() {
+    final text = _urlController.text.trim();
+    if (text.isEmpty) return;
+
+    if (!widget.photoUrls.contains(text)) {
+      final updated = List<String>.from(widget.photoUrls)..add(text);
+      widget.onPhotosChanged(updated);
+    }
+    _urlController.clear();
+  }
+
+  void _removePhoto(int index) {
+    final updated = List<String>.from(widget.photoUrls)..removeAt(index);
+    widget.onPhotosChanged(updated);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final hasPhoto = currentPhotoUrl.trim().isNotEmpty;
+    final photos = widget.photoUrls;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -537,49 +594,134 @@ class KosPhotoPickerSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(
-            title: 'Foto Kamar & Sampul',
-            subtitle: 'Unggah foto kos langsung dari galeri HP atau kamera Anda.',
-            icon: Icons.add_a_photo_rounded,
+          Row(
+            children: [
+              Expanded(
+                child: const _SectionHeader(
+                  title: 'Foto Kamar & Kos',
+                  subtitle: 'Unggah beberapa foto kos sekaligus (tampak depan, kamar, kamar mandi, parkiran).',
+                  icon: Icons.photo_library_rounded,
+                ),
+              ),
+              if (photos.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryAccent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${photos.length} Foto',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryAccent,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 14),
-          if (hasPhoto)
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: SizedBox(
-                    height: 180,
-                    width: double.infinity,
-                    child: KosImageViewer(
-                      imagePath: currentPhotoUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
-                      tooltip: 'Hapus Foto',
-                      onPressed: () {
-                        photoUrlController.clear();
-                        onPhotoSelected('');
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
+
+          if (photos.isNotEmpty) ...[
+            SizedBox(
+              height: 130,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photos.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  // Tombol tambah foto di akhir list
+                  if (index == photos.length) {
+                    return InkWell(
+                      onTap: _pickMultiFromGallery,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 110,
+                        height: 130,
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primaryAccent.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined, color: AppColors.primaryAccent, size: 28),
+                            SizedBox(height: 6),
+                            Text(
+                              '+ Tambah Foto',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryAccent),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final photoPath = photos[index];
+                  final isCover = index == 0;
+
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          width: 120,
+                          height: 130,
+                          child: KosImageViewer(
+                            imagePath: photoPath,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      if (isCover)
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryAccent,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Sampul',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: InkWell(
+                          onTap: () => _removePhoto(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '* Foto urutan pertama akan otomatis dijadikan foto sampul utama di katalog.',
+              style: TextStyle(fontSize: 10, color: AppColors.textSecondaryMuted),
+            ),
+          ] else ...[
             InkWell(
-              onTap: () => _pickImage(context, ImageSource.gallery),
+              onTap: _pickMultiFromGallery,
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 height: 140,
@@ -602,7 +744,7 @@ class KosPhotoPickerSection extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Ketuk untuk Pilih Foto dari Galeri HP',
+                      'Pilih Foto dari Galeri (Bisa Lebih dari 1 Foto)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -611,21 +753,23 @@ class KosPhotoPickerSection extends StatelessWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Format JPG, PNG (Maks 10MB)',
+                      'Tampak Depan, Kamar, Kamar Mandi, dsb.',
                       style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted),
                     ),
                   ],
                 ),
               ),
             ),
+          ],
+
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _pickImage(context, ImageSource.gallery),
+                  onPressed: _pickMultiFromGallery,
                   icon: const Icon(Icons.photo_library_rounded, size: 18),
-                  label: const Text('Buka Galeri'),
+                  label: const Text('Galeri (Multi Foto)'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primaryAccent,
                     side: const BorderSide(color: AppColors.primaryAccent),
@@ -637,7 +781,7 @@ class KosPhotoPickerSection extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _pickImage(context, ImageSource.camera),
+                  onPressed: _pickFromCamera,
                   icon: const Icon(Icons.camera_alt_rounded, size: 18),
                   label: const Text('Buka Kamera'),
                   style: OutlinedButton.styleFrom(
@@ -651,14 +795,32 @@ class KosPhotoPickerSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          TextFormField(
-            controller: photoUrlController,
-            decoration: const InputDecoration(
-              labelText: 'Atau Tempel Tautan / URL Foto (Opsional)',
-              hintText: 'https://...',
-              prefixIcon: Icon(Icons.link_rounded),
-            ),
-            onChanged: onPhotoSelected,
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _urlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Atau Tempel Tautan URL Foto',
+                    hintText: 'https://...',
+                    prefixIcon: Icon(Icons.link_rounded),
+                    isDense: true,
+                  ),
+                  onFieldSubmitted: (_) => _addUrlPhoto(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _addUrlPhoto,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+                child: const Text('Tambah'),
+              ),
+            ],
           ),
         ],
       ),

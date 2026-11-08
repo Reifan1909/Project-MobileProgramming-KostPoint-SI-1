@@ -9,6 +9,7 @@ class KosModel {
   final double latitude;
   final double longitude;
   final String imageUrl;
+  final List<String> images;
   final int remainingRooms;
   final int totalRooms;
   final List<String> facilities;
@@ -29,6 +30,7 @@ class KosModel {
     required this.latitude,
     required this.longitude,
     required this.imageUrl,
+    this.images = const [],
     required this.remainingRooms,
     required this.totalRooms,
     required this.facilities,
@@ -40,6 +42,9 @@ class KosModel {
   });
 
   bool get isAvailable => remainingRooms > 0;
+
+  List<String> get allImages =>
+      images.isNotEmpty ? images : (imageUrl.isNotEmpty ? [imageUrl] : const []);
 
   String get formattedPrice {
     final formattedNum = price.toInt().toString().replaceAllMapped(
@@ -60,6 +65,7 @@ class KosModel {
     double? latitude,
     double? longitude,
     String? imageUrl,
+    List<String>? images,
     int? remainingRooms,
     int? totalRooms,
     List<String>? facilities,
@@ -69,6 +75,10 @@ class KosModel {
     String? ownerPhone,
     String? description,
   }) {
+    final effectiveImages = images ?? this.images;
+    final effectiveImageUrl = imageUrl ??
+        (effectiveImages.isNotEmpty ? effectiveImages.first : this.imageUrl);
+
     return KosModel(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -79,7 +89,8 @@ class KosModel {
       type: type ?? this.type,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrl: effectiveImageUrl,
+      images: effectiveImages,
       remainingRooms: remainingRooms ?? this.remainingRooms,
       totalRooms: totalRooms ?? this.totalRooms,
       facilities: facilities ?? this.facilities,
@@ -103,6 +114,7 @@ class KosModel {
       'latitude': latitude,
       'longitude': longitude,
       'imageUrl': imageUrl,
+      'images': allImages,
       'remainingRooms': remainingRooms,
       'totalRooms': totalRooms,
       'facilities': facilities,
@@ -115,6 +127,15 @@ class KosModel {
   }
 
   factory KosModel.fromJson(Map<String, dynamic> json) {
+    final parsedImages = (json['images'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
+    final fallbackUrl = json['imageUrl'] as String? ?? '';
+    final effectiveImages = parsedImages.isNotEmpty
+        ? parsedImages
+        : (fallbackUrl.isNotEmpty ? [fallbackUrl] : const <String>[]);
+
     return KosModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
@@ -125,7 +146,10 @@ class KosModel {
       type: json['type'] as String? ?? 'Campur',
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
-      imageUrl: json['imageUrl'] as String? ?? '',
+      imageUrl: fallbackUrl.isNotEmpty
+          ? fallbackUrl
+          : (effectiveImages.isNotEmpty ? effectiveImages.first : ''),
+      images: effectiveImages,
       remainingRooms: json['remainingRooms'] as int? ?? 0,
       totalRooms: json['totalRooms'] as int? ?? 0,
       facilities: (json['facilities'] as List<dynamic>?)

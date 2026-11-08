@@ -64,28 +64,7 @@ class DetailKosScreen extends StatelessWidget {
               const SizedBox(width: 12),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  KosImageViewer(
-                    imagePath: kos.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.3),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              background: _DetailPhotoCarousel(images: kos.allImages),
             ),
           ),
           SliverPadding(
@@ -108,6 +87,78 @@ class DetailKosScreen extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: DetailBottomActionBar(kos: kos, auth: auth),
+    );
+  }
+}
+
+class _DetailPhotoCarousel extends StatefulWidget {
+  final List<String> images;
+
+  const _DetailPhotoCarousel({required this.images});
+
+  @override
+  State<_DetailPhotoCarousel> createState() => _DetailPhotoCarouselState();
+}
+
+class _DetailPhotoCarouselState extends State<_DetailPhotoCarousel> {
+  int _activePage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.images;
+
+    if (images.isEmpty) {
+      return const KosImageViewer(imagePath: '');
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          itemCount: images.length,
+          onPageChanged: (page) => setState(() => _activePage = page),
+          itemBuilder: (context, index) {
+            return KosImageViewer(
+              imagePath: images[index],
+              fit: BoxFit.cover,
+            );
+          },
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.4),
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.35),
+              ],
+            ),
+          ),
+        ),
+        if (images.length > 1)
+          Positioned(
+            bottom: 14,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_activePage + 1} / ${images.length} Foto',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
