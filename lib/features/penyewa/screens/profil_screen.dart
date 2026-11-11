@@ -6,6 +6,11 @@ import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import '../providers/katalog_provider.dart';
 
+// Halaman bantuan & about
+import 'dynamic_map_help_page.dart';
+import 'faq_help_page.dart';
+import 'about_app_page.dart';
+
 /// Halaman Profil & Pengaturan (Menu Bar Tab Profil).
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({super.key});
@@ -369,21 +374,20 @@ class _AppSettingsSection extends StatelessWidget {
             leading: const Icon(Icons.map_rounded, color: AppColors.primaryAccent),
             title: const Text('Cara Kerja Pencarian Peta Dinamis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondaryMuted),
-            onTap: () {},
-          ),
-          const Divider(height: 1, color: AppColors.surfaceBorderSoft),
-          ListTile(
-            leading: const Icon(Icons.help_outline_rounded, color: AppColors.primaryAccent),
-            title: const Text('Pusat Bantuan & FAQ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondaryMuted),
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DynamicMapHelpPage()),
+            ),
           ),
           const Divider(height: 1, color: AppColors.surfaceBorderSoft),
           ListTile(
             leading: const Icon(Icons.info_outline_rounded, color: AppColors.primaryAccent),
             title: const Text('Tentang Kost Point Mobile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             subtitle: const Text('Versi 1.0.0+1 (Material 3)', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted)),
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutAppPage()),
+            ),
           ),
         ],
       ),
