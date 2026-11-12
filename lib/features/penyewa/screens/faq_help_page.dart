@@ -34,9 +34,9 @@ class FaqHelpPage extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        itemCount: _FAQs.length,
+        itemCount: _faqList.length,
         itemBuilder: (context, index) {
-          final faq = _FAQs[index];
+          final faq = _faqList[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _FaqExpansionTile(faq: faq),
@@ -61,7 +61,7 @@ class _FaqItem {
 }
 
 /// Daftar pertanyaan & jawaban FAQ.
-const List<_FaqItem> _FAQs = const [
+const List<_FaqItem> _faqList = [
   // Booking Kos
   _FaqItem(
     question: 'Bagaimana cara melakukan booking kos?',

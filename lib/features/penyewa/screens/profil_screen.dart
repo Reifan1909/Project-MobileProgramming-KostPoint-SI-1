@@ -381,6 +381,16 @@ class _AppSettingsSection extends StatelessWidget {
           ),
           const Divider(height: 1, color: AppColors.surfaceBorderSoft),
           ListTile(
+            leading: const Icon(Icons.help_outline_rounded, color: AppColors.primaryAccent),
+            title: const Text('Pusat Bantuan & FAQ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondaryMuted),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FaqHelpPage()),
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.surfaceBorderSoft),
+          ListTile(
             leading: const Icon(Icons.info_outline_rounded, color: AppColors.primaryAccent),
             title: const Text('Tentang Kost Point Mobile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             subtitle: const Text('Versi 1.0.0+1 (Material 3)', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryMuted)),

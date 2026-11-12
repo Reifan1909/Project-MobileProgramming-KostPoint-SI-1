@@ -12,7 +12,11 @@ class DynamicMapHelpPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Cara Kerja Pencarian Peta Dinamis',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: AppColors.textPrimary,
+          ),
         ),
         backgroundColor: AppColors.backgroundColor,
         elevation: 0,
@@ -25,50 +29,76 @@ class DynamicMapHelpPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: const [
             _SectionIntro(title: 'Bagaimana cara kerja pencarian peta dinamis?'),
+            SizedBox(height: 16),
+            _DescriptionText(
+              text:
+                  'Kost Point Mobile menggunakan sistem pencarian berbasis geolokasi dan peta interaktif. Anda dapat mencari kos di sekitar kampus, kantor, atau lokasi pilihan secara real-time dengan akurasi radius dan estimasi rute perjalanan.',
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Langkah-Langkah Pencarian',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: 12),
             _StepCard(
               step: '1',
               title: 'Pilih titik tujuan',
               icon: Icons.location_on_outlined,
               color: AppColors.primaryAccent,
-              description: 'Buka halaman Peta, klik ikon titik lokasi, lalu pilih titik tujuan populer atau ketuk "Ubah Lokasi" untuk mencari titik secara manual.',
+              description:
+                  'Buka halaman Peta, klik ikon titik lokasi, lalu pilih titik tujuan populer atau ketuk "Ubah Lokasi" untuk mencari titik secara manual.',
             ),
-            const SizedBox(height: 12),
             _StepCard(
               step: '2',
               title: 'Aktifkan filter kos',
               icon: Icons.filter_list_outlined,
               color: AppColors.secondaryCardAccent,
-              description: 'Aplikasi menampilkan daftar kos di sekitar titik tujuan. Gunakan filter kategori, jenis kamar, gender, dan fasilitas untuk menyempitkan pencarian.',
+              description:
+                  'Aplikasi menampilkan daftar kos di sekitar titik tujuan. Gunakan filter kategori, jenis kamar, gender, dan fasilitas untuk menyempitkan pencarian.',
             ),
-            const SizedBox(height: 12),
             _StepCard(
               step: '3',
               title: 'Hasil diurutkan otomatis',
               icon: Icons.sort_outlined,
               color: AppColors.success,
-              description: 'Aplikasi menghitung jarak dari titik tujuan ke setiap kos menggunakan algoritma geolokasi. Hasil ditampilkan dari jarak terdekat (terbaik).',
+              description:
+                  'Aplikasi menghitung jarak dari titik tujuan ke setiap kos menggunakan algoritma geolokasi. Hasil ditampilkan dari jarak terdekat (terbaik).',
             ),
-            const SizedBox(height: 12),
             _StepCard(
               step: '4',
               title: 'Pantau dengan peta interaktif',
               icon: Icons.map_outlined,
               color: AppColors.primaryAccent,
-              description: 'Halaman peta menampilkan marker untuk setiap kos yang ditemukan. Anda dapat menggeser (panning), memperbesar/membejolkan (zoom), dan menunjuk marker untuk melihat detail cepat.',
+              description:
+                  'Halaman peta menampilkan marker untuk setiap kos yang ditemukan. Anda dapat menggeser (panning), memperbesar/memperkecil (zoom), dan menunjuk marker untuk melihat detail cepat.',
             ),
-            const SizedBox(height: 12),
             _StepCard(
               step: '5',
               title: 'Lacak lokasi kos Anda',
               icon: Icons.track_changes_outlined,
               color: AppColors.premiumGold,
-              description: 'Klik "Tracker" pada halaman detail kos. Fitur ini menampilkan lokasi kos pada peta dan memberikan perkiraan waktu tiba berdasarkan rute terdekat.',
+              description:
+                  'Klik "Tracker" pada halaman detail kos. Fitur ini menampilkan lokasi kos pada peta dan memberikan perkiraan rute menuju kos pilihan Anda.',
             ),
+            SizedBox(height: 8),
+            _CalloutBox(
+              title: 'Tips Praktis',
+              body:
+                  'Pastikan izin akses lokasi (GPS) aktif di perangkat Anda untuk mendapatkan rekomendasi kos terdekat dari posisi Anda saat ini secara otomatis.',
+            ),
+            SizedBox(height: 20),
           ],
         ),
       ),
+    );
+  }
+}
 
 class _SectionIntro extends StatelessWidget {
   final String title;
@@ -148,6 +178,7 @@ class _StepCard extends StatelessWidget {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 42,
@@ -174,7 +205,7 @@ class _StepCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 SelectableText(
                   description,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     height: 1.45,
                     color: AppColors.textSecondaryMuted,
@@ -183,6 +214,12 @@ class _StepCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _DescriptionText extends StatelessWidget {
   final String text;
@@ -200,7 +237,7 @@ class _DescriptionText extends StatelessWidget {
       ),
       child: SelectableText(
         text,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 13,
           height: 1.6,
           color: AppColors.textSecondaryMuted,
@@ -235,7 +272,11 @@ class _CalloutBox extends StatelessWidget {
               color: AppColors.primaryAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.lightbulb_outline_rounded, color: AppColors.primaryAccent, size: 20),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              color: AppColors.primaryAccent,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -253,7 +294,7 @@ class _CalloutBox extends StatelessWidget {
                 const SizedBox(height: 4),
                 SelectableText(
                   body,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     height: 1.4,
                     color: AppColors.textSecondaryMuted,
@@ -265,17 +306,6 @@ class _CalloutBox extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-          ),
-        ],
-      ),
-    );
-  }
-}
-
     );
   }
 }
